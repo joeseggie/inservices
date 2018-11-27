@@ -12,8 +12,8 @@ from app.handlers.airtime_handler import (
     account_Balance,
     account_bal_GTE,
     account_bal_LTE,
-    debit_msisdn_account,
-    credit_msisdn_account
+    debit_account,
+    credit_account
 )
 
 
@@ -71,7 +71,7 @@ def test_debit_msisdn_account(mock_debit_amount, mock_login, mock_logout):
     mock_current_user = Mock()
 
     # Act
-    result = debit_msisdn_account(msisdn, amount, mock_current_user)
+    result = debit_account(msisdn, amount, mock_current_user)
 
     # Assert
     assert isinstance(result, bool)
@@ -86,7 +86,7 @@ def test_credit_msisdn_account(mock_credit_amount, mock_login, mock_logout):
     msisdn = '712306172'
     amount = 100.0
     # Act
-    result = credit_msisdn_account(msisdn, amount, mock_current_user)
+    result = credit_account(msisdn, amount, mock_current_user)
 
     # Assert
     assert isinstance(result, bool)

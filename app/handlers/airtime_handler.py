@@ -97,7 +97,7 @@ def account_bal_LTE(msisdn: str, amount: float, current_user: User) -> bool:
     return msisdn_balance <= amount
 
 
-def debit_msisdn_account(msisdn: str, amount: float, current_user: User,):
+def debit_account(msisdn: str, amount: float, current_user: User):
     """Debits the MSISDN account with the new amount..
 
     Parameters
@@ -128,7 +128,7 @@ def debit_msisdn_account(msisdn: str, amount: float, current_user: User,):
         )
 
 
-def credit_msisdn_account(msisdn: str, amount: float, current_user: User):
+def credit_account(msisdn: str, amount: float, current_user: User):
     """Credits the MSISDN account with a new amount.
 
     Parameters
