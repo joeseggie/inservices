@@ -29,8 +29,9 @@ def debit_msisdn_account():
 
 @blueprint_api_airtime.route('/credit', method=['POST'])
 def credit_msisdn_account():
+    current_user = User(mml_username='pkgmml', mml_password='pkgmml99')
     data = request.get_json()
-    results = credit_account(data['msisdn'], data['amount'], data['current_user'])
+    results = credit_account(data['msisdn'], data['amount'], current_user)
     credit_response = {
         'transactionId': results['current_user'],
         'transactionDateTime': results['transactionDateTime'],
@@ -39,5 +40,3 @@ def credit_msisdn_account():
         'amount': results['amount']
     }
     return jsonify(credit_response), 200
-
-

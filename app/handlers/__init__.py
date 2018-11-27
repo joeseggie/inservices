@@ -16,5 +16,6 @@ def valid_user(user):
     """Checks if user profile is valid and has no conflicts"""
     return (user.valid_username() and user.valid_public_id())
 
+
 def password_generator(size=6, chars=string.ascii_letters + string.digits):
     return ''.join(random.choice(chars) for i in range(size))
