@@ -1,6 +1,8 @@
 """Handler that caters for the cross functionality features.
 """
+from datetime import datetime
 import logging
+from random import randint
 import re
 
 from app import logger
@@ -51,6 +53,15 @@ def write_log(log_level: int, platform: str, category: str, message: str, user: 
         logger.critical('%s - %s - %s - %s', platform, category, message, user)
     else:
         logger.info('%s - %s - %s - %s', platform, category, message, user)
+
+
+def transactionid_generator():
+    """Generates the transaction Id.
+    """
+    now = datetime.today()
+    date_part = now.strftime('%Y%m%d%H%M%S')
+    random_part = randint(1000, 9999)
+    return f'{date_part}{random_part}'
 
 
 class InvalidMsisdnError(ValueError):
