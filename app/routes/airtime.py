@@ -17,10 +17,14 @@ def debit_msisdn_account():
     current_user = User(mml_username='pkgmml', mml_password='pkgmml99')
     data = request.get_json()
     results = debit_account(data['msisdn'], data['amount'], current_user)
+    if results:
+        operationResult = 'Ok'
+    else:
+        operationResult = 'Failed'
     debit_response = {
-        'transactionId': results['current_user'],
+        'transactionId': current_user,
         'transactionDateTime': results['transactionDateTime'],
-        'operationResult': results['operationResult'],
+        'operationResult': operationResult,
         'msisdn': results['msisdn'],
         'amount': results['amount']
     }
@@ -32,10 +36,14 @@ def credit_msisdn_account():
     current_user = User(mml_username='pkgmml', mml_password='pkgmml99')
     data = request.get_json()
     results = credit_account(data['msisdn'], data['amount'], current_user)
+    if results:
+        operationResult = 'Ok'
+    else:
+        operationResult = 'Failed'
     credit_response = {
-        'transactionId': results['current_user'],
+        'transactionId': current_user,
         'transactionDateTime': results['transactionDateTime'],
-        'operationResult': results['operationResult'],
+        'operationResult': operationResult,
         'msisdn': results['msisdn'],
         'amount': results['amount']
     }
