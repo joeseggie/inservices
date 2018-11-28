@@ -14,6 +14,13 @@ def index():
 
 @blueprint_api_airtime.route('/debit', method=['POST'])
 def debit_msisdn_account():
+    """
+    Debits the MSISDN account
+    Returns
+    -------
+    json
+        Transaction details and the amount deducted.
+    """
     current_user = User(mml_username='pkgmml', mml_password='pkgmml99')
     data = request.get_json()
     results = debit_account(data['msisdn'], data['amount'], current_user)
@@ -22,7 +29,7 @@ def debit_msisdn_account():
     else:
         operationResult = 'Failed'
     debit_response = {
-        'transactionId': current_user,
+        'transactionId': results['transactionId'],
         'transactionDateTime': results['transactionDateTime'],
         'operationResult': operationResult,
         'msisdn': results['msisdn'],
@@ -33,6 +40,13 @@ def debit_msisdn_account():
 
 @blueprint_api_airtime.route('/credit', method=['POST'])
 def credit_msisdn_account():
+    """
+    Credits the MSISDN account
+    Returns
+    -------
+    json
+        Transaction details and the amount credited.
+    """
     current_user = User(mml_username='pkgmml', mml_password='pkgmml99')
     data = request.get_json()
     results = credit_account(data['msisdn'], data['amount'], current_user)
@@ -41,7 +55,7 @@ def credit_msisdn_account():
     else:
         operationResult = 'Failed'
     credit_response = {
-        'transactionId': current_user,
+        'transactionId': results['transactionId'],
         'transactionDateTime': results['transactionDateTime'],
         'operationResult': operationResult,
         'msisdn': results['msisdn'],
