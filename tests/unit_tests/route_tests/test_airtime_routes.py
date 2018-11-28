@@ -2,7 +2,11 @@ import json
 
 from app import app
 
+from app.routes import airtime
+from unittest.mock import patch
 
+
+@patch.object(airtime, 'debit_msisdn_account')
 def test_debit_account_post():
     sampleData = {
         'msisdn': '712306172',
@@ -20,6 +24,7 @@ def test_debit_account_post():
     isinstance(result, dict)
 
 
+@patch.object(airtime, 'credit_msisdn_account')
 def test_credit_account_post():
     sampleData = {
         'msisdn': '712306172',
