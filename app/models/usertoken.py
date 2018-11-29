@@ -1,5 +1,8 @@
-from app import db
+"""usertoken module.
+"""
 from datetime import datetime
+
+from app.inservices import db
 
 
 class UserToken(db.Model):

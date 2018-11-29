@@ -1,173 +1,189 @@
 """IN subscriber profile handling module
 """
-import logging
 from datetime import datetime
 
 from intelecom.intelecom import INConnection
 
-from app import app
-from app.handlers.core_handler import write_log
 from app.models.user import User
 
 
-def profile_status(msisdn: str, current_user: User) -> dict:
-    """Returns the status of MSISDN account profile on the IN.
-
-    Parameters
-    ----------
-    msisdn : str
-        MSISDN number for the account whose status is being queried.
-
-    current_user : User
-        User performing the profile status query.
-
-    Returns
-    -------
-    dict
-        Details the status of the MSISDN.
+class INRequestHandler():
+    """Handles requests to the IN.
     """
-    with INConnection(
-            app.config['IN_SERVER']['HOST'],
-            current_user.mml_username,
-            current_user.mml_password,
-            app.config['IN_SERVER']['PORT'],
-            app.config['IN_SERVER']['BUFFER_SIZE']) as in_connection:
 
-        profile_info = dict(in_connection.display_account_info(msisdn))
-        account_status = int(profile_info['ACNTSTAT'])
-        temporary_suspend_date = datetime.strptime(
-            profile_info['CALLSERVSTOP'],
-            '%Y-%m-%d'
-        )
+    def __init__(self, host: str, port: int, buffer_size: int):
+        """Constructor
 
-        status_info = {
-            'mobileNumber': msisdn
-        }
+        Parameters
+        ----------
+        host : str
+            IN server IP.
+        port : int
+            IN socket port.
+        buffer_size : int
+            IN command buffer size.
+        """
+        self.host = host
+        self.port = port
+        self.buffer_size = buffer_size
 
-        temporarily_suspended = (temporary_suspend_date < datetime.today())
-        if account_status == 1 and not temporarily_suspended:
-            status_info['status'] = 'ACTIVE'
+    def account_info(self, msisdn: str, current_user: User) -> dict:
+        """Get the MSISDN account information.
 
-        status_info['status'] = 'INACTIVE'
+        Parameters
+        ----------
+        msisdn : str
+            MSISDN number for the account whose account information is being
+            required.
 
-        # Log the status information returned.
-        status_info_results = ' '\
-            .join('{!s}={!s}'
-                  .format(key, val) for (key, val) in status_info.items())
-        write_log(
-            logging.INFO,
-            'API',
-            'SYSTEM',
-            f"IN QUERY RESULT=0 {status_info_results}",
-            current_user.username
-        )
+        current_user : User
+            User performing the profile status query.
 
-        return status_info
+        Returns
+        -------
+        dict
+            Transaction details and the account information.
+        """
+        with INConnection(
+                self.host,
+                current_user.mml_username,
+                current_user.mml_password,
+                self.port,
+                self.buffer_size) as in_connection:
 
+            query_result = in_connection.display_account_info(msisdn)
+            balance = float(query_result['ACCLEFT'])
+            subscriber_type = query_result['SUBSCRIBERTYPE']
+            account_status = int(query_result['ACNTSTAT'])
 
-def account_balance(msisdn: str, current_user: User) -> dict:
-    """Get the balance on MSISDN account.
+            profile_info = {
+                'mobileNumber': msisdn,
+                'balance': balance,
+                'subscriberProfile': subscriber_type
+            }
 
-    Parameters
-    ----------
-    msisdn : str
-        MSISDN number for the account whose balance is being required.
+            temporary_suspend_date = datetime.strptime(
+                query_result['CALLSERVSTOP'],
+                '%Y-%m-%d'
+            )
+            temporarily_suspended = (temporary_suspend_date < datetime.today())
+            if account_status == 1 and not temporarily_suspended:
+                profile_info['status'] = 'ACTIVE'
+            else:
+                profile_info['status'] = 'NOT ACTIVE'
 
-    current_user : User
-        User performing the profile status query.
+            return profile_info
 
-    Returns
-    -------
-    dict
-        Transaction details and the balance of the account.
-    """
-    with INConnection(
-            app.config['IN_SERVER']['HOST'],
-            current_user.mml_username,
-            current_user.mml_password,
-            app.config['IN_SERVER']['PORT'],
-            app.config['IN_SERVER']['BUFFER_SIZE']) as in_connection:
+    def debit_airtime(self, msisdn: str, amount: float, current_user: User,):
+        """Debits the MSISDN account with the new amount..
 
-        profile_info = dict(in_connection.display_account_info(msisdn))
-        balance = float(profile_info['ACCLEFT'])
+        Parameters
+        ----------
+        msisdn : str
+            MSISDN number for the account whose balance to be debited.
+        amount : float
+            Money to be debited on a MSISDN account.
+        current_user : User
+            User performing the deduction amount query.
 
-        profile_balance = {
-            'mobileNumber': msisdn,
-            'balance': balance
-        }
+        Returns
+        -------
+        bool
+            Returns True if the MSISDN account balance is debited, False otherwise.
+        """
+        with INConnection(
+                self.host,
+                current_user.mml_username,
+                current_user.mml_password,
+                self.port,
+                self.buffer_size) as in_connection:
 
-        # Log the balance information returned.
-        profile_balance_results = ' '\
-            .join('{!s}={!s}'
-                  .format(key, val) for (key, val) in profile_balance.items())
+            return in_connection.debit_account(
+                msisdn,
+                amount,
+                current_user.mml_username
+            )
 
-        write_log(
-            logging.INFO,
-            'API',
-            'SYSTEM',
-            f"IN QUERY RESULT=0 {profile_balance_results}",
-            current_user.username
-        )
+    def credit_airtime(self, msisdn: str, amount: float, current_user: User):
+        """Credits the MSISDN account with a new amount.
 
-        return profile_balance
+        Parameters
+        ----------
+        msisdn : str
+            MSISDN number for the account whose balance is to be credited.
+        amount : float
+            Money to be credited on a MSISDN account.
+        current_user : User
+            User performing the crediting account query.
 
+        Returns
+        -------
+        bool
+            Returns True if the MSISDN account balance is credited False otherwise.
+        """
+        with INConnection(
+                self.host,
+                current_user.mml_username,
+                current_user.mml_password,
+                self.port,
+                self.buffer_size) as in_connection:
 
-def account_info(msisdn: str, current_user: User) -> dict:
-    """Get the MSISDN account information.
+            return in_connection.credit_account(
+                msisdn,
+                amount,
+                current_user.mml_username
+            )
 
-    Parameters
-    ----------
-    msisdn : str
-        MSISDN number for the account whose account information is being
-        required.
+    def purchase_package(
+            self,
+            msisdn: str,
+            current_profile: str,
+            current_user: User,
+            package_type: str,
+            package_grade: str = None) -> dict:
+        """[summary]
 
-    current_user : User
-        User performing the profile status query.
+        Parameters
+        ----------
+        msisdn : str
+            Mobile number purhasing the package.
 
-    Returns
-    -------
-    dict
-        Transaction details and the account information.
-    """
-    with INConnection(
-            app.config['IN_SERVER']['HOST'],
-            current_user.mml_username,
-            current_user.mml_password,
-            app.config['IN_SERVER']['PORT'],
-            app.config['IN_SERVER']['BUFFER_SIZE']) as in_connection:
+        current_profile : str
+            Current profile of the MSISDN.
 
-        profile_info = dict(in_connection.display_account_info(msisdn))
-        balance = float(profile_info['ACCLEFT'])
-        subscriber_type = profile_info['SUBSCRIBERTYPE']
-        account_status = int(profile_info['ACNTSTAT'])
-        temporary_suspend_date = datetime.strptime(
-            profile_info['CALLSERVSTOP'],
-            '%Y-%m-%d'
-        )
+        package_type : str
+            Package type being purchased.
 
-        profile_info = {
-            'mobileNumber': msisdn,
-            'balance': balance,
-            'subscriberProfile': subscriber_type
-        }
+        package_grade : str
+            Package grade of the package type being purchased.
 
-        temporarily_suspended = (temporary_suspend_date < datetime.today())
-        if account_status == 1 and not temporarily_suspended:
-            profile_info['status'] = 'ACTIVE'
+        Returns
+        -------
+        dict
+            Details of MSISDN, packageType, packageGrade, ProfileBefore,
+            profileAfter returned.
+        """
+        with INConnection(
+                self.host,
+                current_user.mml_username,
+                current_user.mml_password,
+                self.port,
+                self.buffer_size) as in_connection:
 
-        profile_info['status'] = 'INACTIVE'
+            package_purchased = in_connection.purchase_package(
+                msisdn,
+                package_type,
+                package_grade
+            )
 
-        # Log the account information returned.
-        profile_info_results = ' '\
-            .join('{!s}={!s}'
-                  .format(key, val) for (key, val) in profile_info.items())
+            if package_purchased:
+                operation_result = 'OK'
+            else:
+                operation_result = 'FAILED'
 
-        write_log(
-            logging.INFO,
-            'API',
-            'SYSTEM',
-            f"IN QUERY RESULT=0 {profile_info_results}",
-            current_user.username
-        )
-
-        return profile_info
+            return {
+                'operationResult': operation_result,
+                'msisdn': msisdn,
+                'packageType': package_type,
+                'packageGrade': package_grade
+            }
